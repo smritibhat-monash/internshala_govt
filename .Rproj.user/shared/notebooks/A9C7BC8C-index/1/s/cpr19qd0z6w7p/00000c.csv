@@ -1,0 +1,4 @@
+"0","ggplot(st_dev, aes(expenditure, gni)) +"
+"0","  geom_point() +"
+"0","  geom_smooth(method = lm) +"
+"0","  theme_minimal()"
