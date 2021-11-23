@@ -22,7 +22,7 @@ library(plotly)
 #   Impact of GDP on Patent Distribution
 
 ```{r data1}
-patent <- read_csv("data/patent_2 - Total patent grants (direct and PCT national phase entries)_Total count by applicant&#39;s origin (equivalent count)_1980_2020.csv", skip = 5)
+patent <- read_csv("data/patent.csv", skip = 5)
 gdp_per_capita <- read_csv("data/API_NY/API_NY.GDP.PCAP.CD_DS2_en_csv_v2_3159040.csv", skip = 3)
 
 patent <- patent %>%
