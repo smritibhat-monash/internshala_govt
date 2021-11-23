@@ -1,0 +1,185 @@
+---
+title: "Internship Project"
+author: "Smriti Bhat"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+```
+
+#   Impact of GDP on Patent Distribution
+
+```{r data1}
+patent <- read_csv("data/patent_2 - Total patent grants (direct and PCT national phase entries)_Total count by applicant&#39;s origin (equivalent count)_1980_2020.csv", skip = 5)
+gdp_per_capita <- read_csv("data/API_NY/API_NY.GDP.PCAP.CD_DS2_en_csv_v2_3159040.csv", skip = 3)
+
+patent <- patent %>%
+  rename("Country Name" = ...1) %>%
+  rename(Type = ...4) %>%
+  filter("Country Name" != "Origin") %>%
+  select(-c(...2, ...3)) %>%
+  mutate(`2020` = as.numeric(str_extract(`2020`, "\\d+"))) %>%
+  pivot_longer(cols = "1980":"2020", names_to = "Year", values_to = "patent") %>%
+  filter(Type == "Total")
+
+gdp_per_capita <- gdp_per_capita %>%
+  select(-c(`Country Code`,
+            `Indicator Name`,
+            `Indicator Code`,
+            `1960`:`1979`,`...66`)) %>%
+  pivot_longer(cols = "1980":"2020",
+               names_to = "Year",
+               values_to = "gdp_per_capita")
+
+income_group <- read_csv("data/OGHIST.csv", skip = 5)
+
+income_group <- income_group %>%
+  rename("Country Name" = `Data for calendar year :`) %>%
+  select(`Country Name`:`2019`) %>%
+  pivot_longer(cols = "1987":"2019",
+               names_to = "Year",
+               values_to = "income_group") %>%
+  filter(income_group != "..")
+
+patent_gdp <- full_join(patent, gdp_per_capita) %>%
+  full_join(income_group) %>%
+  na.omit()
+
+```
+
+
+.pull-left[
+```{r, fig.height=5, fig.width=5}
+plot <- ggplot(patent_gdp, aes(x = patent, y = gdp_per_capita, text = `Country Name`)) +
+  geom_point(aes(colour = income_group)) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+ggplotly(plot)
+```
+]
+
+.pull-right[
+Feel free to interact and hover over graph for further exploration of data.
+This graph has been made using R and plotly libraries.
+
+###   Insights
+
+-   The high income countries with better gpd per capita seem to be granted a higher number of patents.
+-   China is a startling outlier in Upper Middle Income countries with a startling number of patents event outstripping high income countries by leaps and bounds. 
+]
+
+
+---
+
+##    How much Indian government spends on Science and Technology compared to other countries in the world?
+
+
+```{r}
+spending <- read_csv("data/baa8cb24-1f3b-4652-944c-b3f837892133.csv", skip = 3)
+spending <- spending %>%
+  rename("Country Name" = Time) %>%
+  select(-c(...2, `2019`)) %>%
+  pivot_longer(cols = "2013":"2018",
+               names_to = "Year",
+               values_to = "expenditure") %>%
+  mutate(expenditure = as.numeric(str_extract(expenditure, "\\d+"))) %>%
+  na.omit()
+```
+
+.pull-left[
+```{r, fig.height=5, fig.width=5}
+plot <- ggplot(spending %>% filter(`Country Name` != "India"), 
+               aes(Year, expenditure)) +
+  geom_line(aes(group = `Country Name`), color = "gray") +
+  geom_line(data = spending %>% filter(`Country Name` == "India"), 
+            aes(group = `Country Name`), 
+            color = "red") +
+  theme_minimal()
+
+ggplotly(plot)
+```
+
+]
+
+.pull-right[
+Upon zooming into the figure we can see that the spending of the indian government while it may not be in the top five, it definitely figures in the top 10 as only 7-8 countries show higher spending across all years.
+
+This plot has also been analysed using R and plotly libraries.
+]
+
+---
+
+##    S&T spending vs Development indicators in India
+
+```{r}
+gni <- read_csv("data/21ea8c46-333a-4f8d-bc81-624f2d4f8877.csv", skip = 3)
+gni <- gni %>%
+  rename("Country Name" = Time) %>%
+  select(-c(...2, `2020`)) %>%
+  pivot_longer(cols = "2014":"2019",
+               names_to = "Year",
+               values_to = "gni") %>%
+  mutate(gni = as.numeric(str_extract(gni, "\\d+"))) %>%
+  filter(`Country Name` == "India")
+
+spending <- spending %>%
+  filter(`Country Name` == "India")
+
+gdp_per_capita <- gdp_per_capita %>%
+  filter(`Country Name` == "India")
+
+st_dev <- full_join(gni, spending) %>%
+  full_join(gdp_per_capita)
+
+```
+
+.pull-left[
+```{r, fig.height=5}
+ggplot(st_dev, aes(expenditure, gni)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  theme_minimal()
+```
+
+This model is using linear regression to check the effect of expenditure on GNI development indicator.
+
+-   It displays a strongly positive trend.
+
+]
+
+.pull-right[
+```{r, fig.height=5}
+ggplot(st_dev, aes(expenditure, gdp_per_capita)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  theme_minimal()
+```
+
+This model is using linear regression to check the effect of expenditure on GDP per capita development indicator.
+
+-   It displays a weakly positive trend.
+
+]
+
+---
+
+#   Data Sources
+
+WIPO IP Statistics Data Center. (n.d.). Retrieved November 22, 2021, from https://www3.wipo.int/ipstats/index.htm?tab=patent. 
+
+GDP per capita (current US$). Data. (n.d.). Retrieved November 22, 2021, from https://data.worldbank.org/indicator/NY.GDP.PCAP.CD. 
+
+Uis. (n.d.). Uis statistics. Retrieved November 22, 2021, from http://data.uis.unesco.org/Index.aspx. 
